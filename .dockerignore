@@ -1,4 +1,11 @@
 .react-router
+
+.git
+.gitignore
+.github
+.vscode
+.tmp
+
 build
 node_modules
 README.md
