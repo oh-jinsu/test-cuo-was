@@ -7,8 +7,8 @@ dotenv.config({
 
 export default defineConfig({
   dialect: "postgresql",
-  schema: ["./db"],
-  out: "./db/drizzle",
+  schema: ["./app/db"],
+  out: "./app/db/drizzle",
   dbCredentials: {
     host: process.env.POSTGRES_HOST!,
     port: parseInt(process.env.POSTGRES_PORT!),
