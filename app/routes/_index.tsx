@@ -1,20 +1,20 @@
-import { withAuthLoader } from "~/auth/middleware";
+import { withAuthLoader } from "~/auth/with_auth";
 import { GoogleLoginButton } from "dn-react-router-toolkit/auth-kit/client/google_login_button";
 import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI } from "~/app.config";
-import type { Route } from "./+types/_index";
+import { SEO } from "~/seo";
+import { FileUploadButton } from "~/components/file_upload_button";
 
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
-  ];
-}
+export const meta = SEO.meta;
 
-export const loader = withAuthLoader(() => async ({ request }) => {
-  return {};
+export const loader = withAuthLoader(() => async () => {
+  return {
+    seo: SEO.init({
+      canonicalPath: "/",
+    }),
+  };
 });
 
-export default function Home({ loaderData }: Route.ComponentProps) {
+export default function Home() {
   return (
     <div>
       Hello World!
@@ -22,6 +22,13 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         GOOGLE_CLIENT_ID={GOOGLE_CLIENT_ID}
         GOOGLE_REDIRECT_URI={GOOGLE_REDIRECT_URI}
       />
+      <FileUploadButton
+        onUpload={(e) => {
+          console.log(e);
+        }}
+      >
+        업로드
+      </FileUploadButton>
     </div>
   );
 }

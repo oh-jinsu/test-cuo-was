@@ -1,8 +1,8 @@
-import { db, fileTable } from "~/db";
-import { type FileRepository } from "dn-react-router-toolkit/file-kit/repository";
+import { db, fileTable, type FileTableSelect } from "~/db";
+import type { FileRepository } from "dn-react-router-toolkit/file-kit/repository";
 import { eq } from "drizzle-orm";
 
-export const fileRepository: FileRepository<typeof fileTable.$inferSelect> = {
+export const fileRepository: FileRepository<FileTableSelect> = {
   async findFileById(fileId) {
     return db.query.fileTable.findFirst({
       where: (t, { eq }) => eq(t.id, fileId),

@@ -9,9 +9,10 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import ClientEnv from "./components/client_env";
+import { SEO } from "./seo";
+import ClientEnv from "dn-react-router-toolkit/components/client_env";
 
-export async function loader() {
+export async function loader(args: Route.LoaderArgs) {
   return {
     ENV: {
       SITE_ORIGIN: process.env.SITE_ORIGIN,
@@ -31,6 +32,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
+        <SEO.StructedData />
         {children}
         <ScrollRestoration />
         <Scripts />
