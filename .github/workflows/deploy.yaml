@@ -161,18 +161,27 @@ jobs:
             }
             INC
 
-            CERT_PATH="/etc/letsencrypt/live/${SITE_DOMAIN}/fullchain.pem"
+            TEMP_OUTPUT="/tmp/cert_check_output.txt"
 
-            if [ ! -f "$CERT_PATH" ]; then
+            if ! sudo certbot certificates -d "${SITE_DOMAIN}" > "$TEMP_OUTPUT" 2>&1; then
+              echo "ERROR: Certbot command failed to run."
+              
+              sudo apt install snapd -y
+              sudo snap install --classic certbot || true
+            fi
+
+            if ! grep -q "${SITE_DOMAIN}" "$TEMP_OUTPUT"; then
               sudo rm -f "$ACTIVE_CONF"
               sudo ln -s "$NEW_INCLUDE" "$ACTIVE_CONF"
 
               echo "Obtaining SSL certificate for ${SITE_DOMAIN}"
 
-              sudo certbot --nginx --quiet --nginx -d "$SITE_DOMAIN" --non-interactive --agree-tos -m "${CERTBOT_EMAIL:-gabinandobin@gmail.com}" || true
+              sudo certbot --nginx --quiet -d "$SITE_DOMAIN" --non-interactive --agree-tos -m "${CERTBOT_EMAIL:-gabinandobin@gmail.com}" || true
             else
               echo "SSL certificate for ${SITE_DOMAIN} already exists"
             fi
+
+            rm -f "$TEMP_OUTPUT" || true
 
             aws configure set region "$AWS_REGION"
             aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
