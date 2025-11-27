@@ -9,23 +9,21 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import ClientEnv from "./components/client_env";
 
-export const links: Route.LinksFunction = () => [
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
-  },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-  },
-];
+export async function loader() {
+  return {
+    ENV: {
+      SITE_ORIGIN: process.env.SITE_ORIGIN,
+      CDN_ORIGIN: process.env.CDN_ORIGIN,
+      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    },
+  };
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="ko">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -36,6 +34,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <ScrollRestoration />
         <Scripts />
+        <ClientEnv />
       </body>
     </html>
   );

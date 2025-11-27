@@ -9,12 +9,18 @@ import {
   pgTable,
 } from "drizzle-orm/pg-core";
 
+export type ConfigTableSelect = typeof configTable.$inferSelect;
+export type ConfigTableInsert = typeof configTable.$inferInsert;
+
 export const configTable = pgTable("configs", {
   name: text("name").primaryKey(),
   content: json("content").notNull().$type<Record<string, any>>(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
+
+export type UserTableSelect = typeof userTable.$inferSelect;
+export type UserTableInsert = typeof userTable.$inferInsert;
 
 export const userTable = pgTable("users", {
   id: uuid("id").primaryKey(),
@@ -37,6 +43,9 @@ export const userRelations = relations(userTable, ({ one, many }) => ({
   }),
 }));
 
+export type CredentialTableSelect = typeof credentialTable.$inferSelect;
+export type CredentialTableInsert = typeof credentialTable.$inferInsert;
+
 export const credentialTable = pgTable("credentials", {
   id: text("id").primaryKey(),
   password: text("password").notNull(),
@@ -53,6 +62,9 @@ export const credentialRelations = relations(credentialTable, ({ one }) => ({
     references: [userTable.id],
   }),
 }));
+
+export type ThirdpartyAuthTableSelect = typeof thirdpartyAuthTable.$inferSelect;
+export type ThirdpartyAuthTableInsert = typeof thirdpartyAuthTable.$inferInsert;
 
 export const thirdpartyAuthTable = pgTable("thirdparty_auths", {
   id: text("id").primaryKey(),
@@ -73,6 +85,9 @@ export const thirdpartyAuthRelations = relations(
     }),
   })
 );
+
+export type FileTableSelect = typeof fileTable.$inferSelect;
+export type FileTableInsert = typeof fileTable.$inferInsert;
 
 export const fileTable = pgTable("files", {
   id: uuid("id").primaryKey(),

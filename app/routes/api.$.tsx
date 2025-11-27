@@ -1,4 +1,4 @@
-import { authAPIHandler } from "~/modules/auth-kit/auth_api_handler";
+import { authAPIHandler } from "~/auth/auth_api_handler";
 
 export const loader = authAPIHandler;
 
