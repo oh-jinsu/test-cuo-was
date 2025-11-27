@@ -7,4 +7,52 @@
     "SUIT Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  --color-primary: #2176ff;
+  --color-primary-50: #e5efff;
+  --color-primary-100: #bed7ff;
+  --color-primary-200: #97bfff;
+  --color-primary-300: #6fa6ff;
+  --color-primary-400: #488eff;
+  --color-primary-500: #2176ff;
+  --color-primary-600: #005ff9;
+  --color-primary-700: #0050d2;
+  --color-primary-800: #0041aa;
+  --color-primary-900: #003283;
+  --color-primary-950: #00235c;
+}
+
+@layer bae {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-neutral-200);
+  }
+}
+
+@layer components {
+  .button-primary {
+    @apply transition-colors bg-primary hover:bg-primary-600 rounded text-white w-full text-sm font-semibold h-10;
+  }
+}
+
+button,
+input[type="button"],
+input[type="submit"],
+select {
+  @apply cursor-pointer;
+}
+
+label {
+  @apply font-semibold;
+}
+
+label > input {
+  @apply block mt-1;
+}
+
+input {
+  @apply outline-none border border-neutral-300 rounded mb-2 h-10 px-2 font-normal;
 }
