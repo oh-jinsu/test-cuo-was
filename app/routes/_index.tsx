@@ -1,16 +1,18 @@
 import { SEO } from "~/seo";
 import { useAuth } from "dn-react-router-toolkit/auth/client/provider";
 import { Link } from "react-router";
+import { withAuthLoader } from "~/auth/with_auth";
 
 export const meta = SEO.meta;
 
-export const loader = async () => {
+export const loader = withAuthLoader(() => async () => {
+
   return {
     seo: SEO.init({
       canonicalPath: "/",
     }),
   };
-};
+});
 
 export default function Home() {
   const { auth, logout } = useAuth();
