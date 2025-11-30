@@ -1,8 +1,8 @@
-import { FileService } from "dn-react-router-toolkit/file-kit/file_service";
-import { OBJECT_STORAGE } from "./object_storage";
-import { fileRepository } from "./repository";
+import { FileService } from "dn-react-router-toolkit/file/file_service";
+import { objectStorage } from "./object_storage";
+import { fileRepository } from "./file_repository";
 
-export const FILE_SERVICE = new FileService("dndnsoft", {
-  repository: fileRepository,
-  OBJECT_STORAGE,
+export const fileService = new FileService({
+  fileRepository,
+  objectStorage,
 });

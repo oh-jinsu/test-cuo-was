@@ -1,20 +1,13 @@
-import { createAuthAPIHandler } from "dn-react-router-toolkit/route/api";
-import { AUTH } from "./auth";
-import { APPLE_AUTH, GOOGLE_AUTH, KAKAO_AUTH } from "./thirdparty";
-import { JWT_MANAGER } from "./jwt_manager";
-import { FILE_SERVICE } from "../file/file_service";
-import { authRepository } from "./repository";
-import { fileRepository } from "../file/repository";
-import { SITE_ORIGIN } from "~/app.config";
+import { createAPIHandler } from "dn-react-router-toolkit/route/api";
+import { authService } from "./auth";
+import { getThirdPartyAuth } from "./thirdparty";
+import { fileService } from "../file/file_service";
+import { passwordRecoveryService } from "./password_recovery_service";
 
-export const authAPIHandler = createAuthAPIHandler({
-  SITE_ORIGIN,
-  AUTH,
-  GOOGLE_AUTH,
-  APPLE_AUTH,
-  KAKAO_AUTH,
-  JWT_MANAGER,
-  FILE_SERVICE,
-  authRepository,
-  fileRepository,
+export const authAPIHandler = createAPIHandler({
+  authService,
+  getThirdPartyAuth,
+  passwordRecoveryService,
+  fileService,
+  signupTokenSecret: process.env.REFRESH_TOKEN_SECRET!,
 });

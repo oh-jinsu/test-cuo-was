@@ -12,9 +12,16 @@ export const createAdmin = async () => {
       .insert(userTable)
       .values({
         id: v5("admin", v5.DNS),
+        name: "관리자",
         role: "admin",
       })
-      .onConflictDoNothing()
+      .onConflictDoUpdate({
+        target: userTable.id,
+        set: {
+          role: "admin",
+          name: "관리자"
+        },
+      })
       .returning();
 
     admin = user;

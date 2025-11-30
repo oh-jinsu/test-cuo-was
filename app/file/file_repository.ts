@@ -1,5 +1,5 @@
 import { db, fileTable, type FileTableSelect } from "~/db";
-import type { FileRepository } from "dn-react-router-toolkit/file-kit/repository";
+import type { FileRepository } from "dn-react-router-toolkit/file/file_repository";
 import { eq } from "drizzle-orm";
 
 export const fileRepository: FileRepository<FileTableSelect> = {

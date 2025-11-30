@@ -1,34 +1,29 @@
-import { withAuthLoader } from "~/auth/with_auth";
-import { GoogleLoginButton } from "dn-react-router-toolkit/auth-kit/client/google_login_button";
-import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI } from "~/app.config";
 import { SEO } from "~/seo";
-import { FileUploadButton } from "~/components/file_upload_button";
+import { useAuth } from "dn-react-router-toolkit/auth/client/provider";
+import { Link } from "react-router";
 
 export const meta = SEO.meta;
 
-export const loader = withAuthLoader(() => async () => {
+export const loader = async () => {
   return {
     seo: SEO.init({
       canonicalPath: "/",
     }),
   };
-});
+};
 
 export default function Home() {
+  const { auth, logout } = useAuth();
+
   return (
-    <div>
-      Hello World!
-      <GoogleLoginButton
-        GOOGLE_CLIENT_ID={GOOGLE_CLIENT_ID}
-        GOOGLE_REDIRECT_URI={GOOGLE_REDIRECT_URI}
-      />
-      <FileUploadButton
-        onUpload={(e) => {
-          console.log(e);
-        }}
-      >
-        업로드
-      </FileUploadButton>
+    <div className="flex flex-col justify-center items-center h-screen">
+      {auth ? `Hello, ${auth.userId}!` : "Hello World!"}
+      <Link to="/login">Login</Link>
+      {auth && <button onClick={() => {
+        logout();
+      }}>
+        Logout
+      </button>}
     </div>
   );
 }

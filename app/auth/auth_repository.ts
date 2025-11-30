@@ -1,8 +1,8 @@
-import { type AuthRepository } from "dn-react-router-toolkit/auth-kit/repository";
-import { db, fileTable, thirdpartyAuthTable, userTable } from "~/db";
+import { type AuthRepository } from "dn-react-router-toolkit/auth/auth_repository";
+import { credentialTable, db, thirdpartyAuthTable, userTable, type FileTableSelect } from "~/db";
 import { eq } from "drizzle-orm";
 
-export const authRepository: AuthRepository = {
+export const authRepository: AuthRepository<FileTableSelect> = {
   findUserById(id) {
     return db.query.userTable.findFirst({
       where(t, { eq }) {
@@ -17,6 +17,12 @@ export const authRepository: AuthRepository = {
       },
     });
   },
+  async updatePassword(id, hashedPassword) {
+    await db
+      .update(credentialTable)
+      .set({ password: hashedPassword })
+      .where(eq(credentialTable.id, id));
+  },
   async updateUserRefreshToken(id, refreshToken) {
     await db
       .update(userTable)
@@ -24,7 +30,10 @@ export const authRepository: AuthRepository = {
       .where(eq(userTable.id, id));
   },
   async createUser(user) {
-    const [result] = await db.insert(userTable).values(user).returning();
+    const [result] = await db.insert(userTable).values({
+      ...user,
+      profileImageId: user.profileImage?.id || null,
+    }).returning();
 
     return result;
   },
@@ -38,7 +47,7 @@ export const authRepository: AuthRepository = {
   async createThirdPartyAuth(thirdPartyAuth) {
     await db.insert(thirdpartyAuthTable).values(thirdPartyAuth);
   },
-  async createFile(file) {
-    await db.insert(fileTable).values(file).returning();
-  },
+  async createCredential(credential) {
+    await db.insert(credentialTable).values(credential);
+  }
 };

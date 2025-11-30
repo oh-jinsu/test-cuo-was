@@ -11,8 +11,11 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { SEO } from "./seo";
 import ClientEnv from "dn-react-router-toolkit/components/client_env";
+import { withAuthLoader } from "./auth/with_auth";
+import AuthProvider from "dn-react-router-toolkit/auth/client/provider";
+import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI } from "./app.config";
 
-export async function loader(args: Route.LoaderArgs) {
+export const loader = withAuthLoader((a) => () => {
   return {
     ENV: {
       SITE_ORIGIN: process.env.SITE_ORIGIN,
@@ -20,7 +23,7 @@ export async function loader(args: Route.LoaderArgs) {
       GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     },
   };
-}
+})
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -32,7 +35,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        <SEO.StructedData />
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -43,7 +45,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return <AuthProvider googleAuth={{
+    googleClientId: GOOGLE_CLIENT_ID,
+    googleRedirectUrl: GOOGLE_REDIRECT_URI,
+  }}>
+    <SEO.StructedData />
+    <Outlet />
+  </AuthProvider>;
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
