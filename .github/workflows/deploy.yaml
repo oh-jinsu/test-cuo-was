@@ -103,6 +103,11 @@ jobs:
             SITE_CONF="/etc/nginx/sites-enabled/${APP_NAME}.conf"
             ACTIVE_CONF="/etc/nginx/includes/${UPSTREAM_NAME}.conf"
 
+            if [ -z "$SITE_DOMAIN" ]; then
+              echo "ERROR: SITE_DOMAIN is not set."
+              exit 1
+            fi
+
             echo "Deploying $IMAGE_URI"
 
             sudo mkdir -p /etc/nginx/includes
@@ -141,7 +146,7 @@ jobs:
                   proxy_set_header X-Forwarded-Proto \$scheme;
               }
 
-              listen [::]:443 ssl ipv6only=on;
+              listen [::]:443 ssl;
               listen 443 ssl;
               ssl_certificate /etc/letsencrypt/live/${SITE_DOMAIN}/fullchain.pem;
               ssl_certificate_key /etc/letsencrypt/live/${SITE_DOMAIN}/privkey.pem;
