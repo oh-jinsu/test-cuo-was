@@ -4,7 +4,7 @@ import {
   NO_CONTENT,
   OK,
   UNAUTHORIZED,
-} from "dn-react-router-toolkit/http/response";
+} from "dn-react-router-toolkit/http";
 import { eq } from "drizzle-orm";
 import { withAuthAction, withAuthLoader } from "~/auth/with_auth";
 import { db, userTable } from "~/db";
@@ -33,7 +33,6 @@ export const action = withAuthAction((auth) => async ({ request }) => {
 
   switch (request.method) {
     case "PATCH": {
-
       const { ...props } = await request.json();
 
       const [user] = await db
@@ -45,9 +44,7 @@ export const action = withAuthAction((auth) => async ({ request }) => {
       return CREATED(user);
     }
     case "DELETE": {
-      await db
-        .delete(userTable)
-        .where(eq(userTable.id, auth.userId as string));
+      await db.delete(userTable).where(eq(userTable.id, auth.userId as string));
 
       return NO_CONTENT();
     }

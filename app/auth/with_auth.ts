@@ -1,5 +1,5 @@
-import { createWithAuthHandler } from "dn-react-router-toolkit/auth/with_auth";
-import { authService } from "./auth";
+import { createWithAuthHandler } from "dn-react-router-toolkit/auth";
+import { authService } from "./auth_service";
 import { type LoaderFunctionArgs } from "react-router";
 
 export const withAuthLoader = createWithAuthHandler<LoaderFunctionArgs>({

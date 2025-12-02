@@ -1,8 +1,8 @@
 import { withAuthLoader } from "~/auth/with_auth";
 import { createAdmin } from "~/auth/create_admin";
 import { SEO } from "~/seo";
-import { useAuth } from "dn-react-router-toolkit/auth/client/provider";
-import { Link } from "react-router";
+import { useAuth } from "dn-react-router-toolkit/auth/client";
+import { Link, useNavigate } from "react-router";
 
 export const meta = SEO.meta;
 
@@ -18,6 +18,8 @@ export const loader = withAuthLoader(() => async () => {
 });
 
 export default function Home() {
+  const navigate = useNavigate();
+
   const { login, loginWithGoogle } = useAuth();
 
   return (
@@ -32,7 +34,13 @@ export default function Home() {
           const id = formData.get("id") as string;
           const password = formData.get("password") as string;
 
-          login(id, password);
+          try {
+            await login(id, password);
+
+            navigate("/");
+          } catch (error) {
+            alert(error instanceof Error ? error.message : "로그인 실패");
+          }
         }}
       >
         <label>
@@ -44,9 +52,7 @@ export default function Home() {
           <input name="password" type="password" />
         </label>
         <button className="button-primary my-2">로그인</button>
-        <Link
-          to="/signup"
-          className="button-outline my-2">
+        <Link to="/signup" className="button-outline my-2">
           회원가입
         </Link>
         <div>
@@ -54,15 +60,14 @@ export default function Home() {
             비밀번호를 잊으셨나요?
           </Link>
         </div>
-        <div className="my-4 text-center text-sm">
-          또는
-        </div>
+        <div className="my-4 text-center text-sm">또는</div>
         <button
           type="button"
           className="button-outline my-2 "
           onClick={() => {
             loginWithGoogle();
-          }}>
+          }}
+        >
           구글로 로그인
         </button>
       </form>

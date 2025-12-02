@@ -5,17 +5,17 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteLoaderData,
 } from "react-router";
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import { SEO } from "./seo";
-import ClientEnv from "dn-react-router-toolkit/components/client_env";
+import { ClientEnv } from "dn-react-router-toolkit/client";
 import { withAuthLoader } from "./auth/with_auth";
-import AuthProvider from "dn-react-router-toolkit/auth/client/provider";
+import { AuthProvider } from "dn-react-router-toolkit/auth/client";
 import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI } from "./app.config";
 
-export const loader = withAuthLoader((a) => () => {
+export const loader = withAuthLoader(() => () => {
   return {
     ENV: {
       SITE_ORIGIN: process.env.SITE_ORIGIN,
@@ -23,7 +23,7 @@ export const loader = withAuthLoader((a) => () => {
       GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     },
   };
-})
+});
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -45,13 +45,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <AuthProvider googleAuth={{
-    googleClientId: GOOGLE_CLIENT_ID,
-    googleRedirectUrl: GOOGLE_REDIRECT_URI,
-  }}>
-    <SEO.StructedData />
-    <Outlet />
-  </AuthProvider>;
+  const { AUTH } = useRouteLoaderData("root");
+
+  return (
+    <AuthProvider
+      auth={AUTH}
+      googleAuth={{
+        googleClientId: GOOGLE_CLIENT_ID,
+        googleRedirectUrl: GOOGLE_REDIRECT_URI,
+      }}
+    >
+      <Outlet />
+    </AuthProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

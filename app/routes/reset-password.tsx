@@ -1,4 +1,4 @@
-import { useAuth } from "dn-react-router-toolkit/auth/client/provider";
+import { useAuth } from "dn-react-router-toolkit/auth/client";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 
@@ -23,10 +23,12 @@ export default function Page() {
     const password = formData.get("password") as string;
     const passwordConfirm = formData.get("confirmPassword") as string;
 
-    const result = await resetPassword(token, password, passwordConfirm);
+    try {
+      await resetPassword(token, password, passwordConfirm);
 
-    if (result) {
       setSent("success");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "알 수 없는 오류가 발생했습니다.");
     }
 
     setIsPending(false);

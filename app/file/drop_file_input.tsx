@@ -1,6 +1,6 @@
-import createUseDropFileInput from "dn-react-router-toolkit/file/client/drop_file_input";
+import { createUseDropFileInput } from "dn-react-router-toolkit/file/client";
 import { fileUploader } from "~/file/file_uploader";
 
-export const DropFileInput = createUseDropFileInput({
+export const useDropFileInput = createUseDropFileInput({
   uploadFile: (e) => fileUploader.uploadFile(e),
 });

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "dn-react-router-toolkit/auth/client/provider";
+import { useAuth } from "dn-react-router-toolkit/auth/client";
 
 export default function Page() {
   const { requestResetPassword } = useAuth();
@@ -17,10 +17,12 @@ export default function Page() {
     const formData = new FormData(form);
     const email = formData.get("email") as string;
 
-    const result = await requestResetPassword(email);
+    try {
+      await requestResetPassword(email);
 
-    if (result) {
       setSent(email);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "알 수 없는 오류가 발생했습니다.");
     }
 
     setIsPending(false);
@@ -43,11 +45,7 @@ export default function Page() {
             placeholder="abc@example.com"
             className="w-full"
           />
-          <button
-            type="submit"
-            disabled={isPending}
-            className="button-primary"
-          >
+          <button type="submit" disabled={isPending} className="button-primary">
             {isPending ? "전송 중..." : "비밀번호 재설정 이메일 보내기"}
           </button>
         </form>
