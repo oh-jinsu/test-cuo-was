@@ -17,7 +17,7 @@
     "@react-router/node": "^7.9.2",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
-    "dn-react-router-toolkit": "0.3.2",
+    "dn-react-router-toolkit": "0.3.9",
     "dotenv": "^17.2.3",
     "dotenv-cli": "^11.0.0",
     "drizzle-orm": "^0.44.7",

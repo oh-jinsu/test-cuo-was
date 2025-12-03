@@ -10,13 +10,15 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import { ClientEnv } from "dn-react-router-toolkit/client";
+import { EnvLoader } from "dn-react-router-toolkit/client";
 import { withAuthLoader } from "./auth/with_auth";
 import { AuthProvider } from "dn-react-router-toolkit/auth/client";
 import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI } from "./app.config";
 
-export const loader = withAuthLoader(() => () => {
+export const loader = withAuthLoader((AUTH) => ({ request }) => {
   return {
+    AUTH,
+    userAgent: request.headers.get("user-agent") || "",
     ENV: {
       SITE_ORIGIN: process.env.SITE_ORIGIN,
       CDN_ORIGIN: process.env.CDN_ORIGIN,
@@ -38,7 +40,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <ScrollRestoration />
         <Scripts />
-        <ClientEnv />
+        <EnvLoader />
       </body>
     </html>
   );
