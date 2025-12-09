@@ -1,4 +1,4 @@
-import { type AuthRepository } from "dn-react-router-toolkit/auth/server";
+import { type AuthRepository } from "dn-react-toolkit/auth/server";
 import {
   credentialTable,
   db,

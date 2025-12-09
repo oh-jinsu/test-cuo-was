@@ -12,7 +12,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { EnvLoader } from "dn-react-router-toolkit/client";
 import { withAuthLoader } from "./auth/with_auth";
-import { AuthProvider } from "dn-react-router-toolkit/auth/client";
+import { AuthProvider } from "dn-react-toolkit/auth/client";
 import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI } from "./app.config";
 
 export const loader = withAuthLoader((AUTH) => ({ request }) => {

@@ -3,14 +3,20 @@ import {
   AppleAuth,
   KakaoAuth,
   ThirdpartyAuthService,
-} from "dn-react-router-toolkit/auth/server";
+  JWTManager,
+  type ThirdpartySignupTokenPayload,
+} from "dn-react-toolkit/auth/server";
 import { authService } from "./auth_service";
 import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI } from "~/app.config";
 
+export const signupTokenManager = new JWTManager<ThirdpartySignupTokenPayload>({
+  secret: process.env.REFRESH_TOKEN_SECRET!,
+  expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
+});
+
 const thirdpartyAuth = new ThirdpartyAuthService({
   authService,
-  signupTokenSecret: process.env.REFRESH_TOKEN_SECRET!,
-  signupTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
+  signupTokenManager,
 });
 
 export const getThirdPartyAuth = (provider: string) => {

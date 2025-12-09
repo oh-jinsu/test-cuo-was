@@ -1,5 +1,5 @@
 import { SEO } from "~/seo";
-import { useAuth } from "dn-react-router-toolkit/auth/client";
+import { useAuth } from "dn-react-toolkit/auth/client";
 import { Link } from "react-router";
 import { withAuthLoader } from "~/auth/with_auth";
 

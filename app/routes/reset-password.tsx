@@ -1,4 +1,4 @@
-import { useAuth } from "dn-react-router-toolkit/auth/client";
+import { useAuth } from "dn-react-toolkit/auth/client";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 

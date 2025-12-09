@@ -4,7 +4,7 @@ import {
   NO_CONTENT,
   OK,
   UNAUTHORIZED,
-} from "dn-react-router-toolkit/http";
+} from "dn-react-toolkit/http";
 import { eq } from "drizzle-orm";
 import { withAuthAction, withAuthLoader } from "~/auth/with_auth";
 import { db, userTable } from "~/db";

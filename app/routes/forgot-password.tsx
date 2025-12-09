@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "dn-react-router-toolkit/auth/client";
+import { useAuth } from "dn-react-toolkit/auth/client";
 
 export default function Page() {
   const { requestResetPassword } = useAuth();

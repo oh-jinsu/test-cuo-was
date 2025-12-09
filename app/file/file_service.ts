@@ -1,4 +1,4 @@
-import { FileService } from "dn-react-router-toolkit/file/server";
+import { FileService } from "dn-react-toolkit/file/server";
 import { objectStorage } from "./object_storage";
 import { fileRepository } from "./file_repository";
 

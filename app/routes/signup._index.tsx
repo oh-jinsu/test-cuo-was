@@ -1,10 +1,6 @@
-import { useAuth } from "dn-react-router-toolkit/auth/client";
-import {
-  useLoaderData,
-  useNavigate,
-  type LoaderFunctionArgs,
-} from "react-router";
-import { jwtManager } from "~/auth/jwt_manager";
+import { useAuth } from "dn-react-toolkit/auth/client";
+import { useNavigate, type LoaderFunctionArgs } from "react-router";
+import { signupTokenManager } from "~/auth/thirdparty";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const searchParams = new URL(request.url).searchParams;
@@ -15,10 +11,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return {};
   }
 
-  const payload = await jwtManager.verify(
-    token,
-    process.env.REFRESH_TOKEN_SECRET!
-  );
+  const payload = await signupTokenManager.verify(token);
 
   return payload;
 };

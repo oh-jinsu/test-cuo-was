@@ -1,14 +1,18 @@
-import { PasswordRecoveryService } from "dn-react-router-toolkit/auth/server";
+import {
+  JWTManager,
+  PasswordRecoveryService,
+} from "dn-react-toolkit/auth/server";
 import { SITE_NAME, SITE_ORIGIN } from "~/app.config";
 import { authRepository } from "./auth_repository";
-import { jwtManager } from "./jwt_manager";
 
 export const passwordRecoveryService = new PasswordRecoveryService({
   siteName: SITE_NAME,
   siteOrigin: SITE_ORIGIN,
   authRepository,
-  jwtManager,
-  resetPasswordTokenSecret: process.env.REFRESH_TOKEN_SECRET!,
+  passwordRecoveryTokenManager: new JWTManager({
+    secret: process.env.REFRESH_TOKEN_SECRET!,
+    expiresIn: "1h",
+  }),
   emailCredentials: {
     service: process.env.EMAIL_SERVICE!,
     user: process.env.EMAIL_USER!,

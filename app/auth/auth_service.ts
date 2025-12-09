@@ -1,13 +1,19 @@
-import { AuthService } from "dn-react-router-toolkit/auth/server";
+import { AuthService, JWTManager } from "dn-react-toolkit/auth/server";
 import { authRepository } from "./auth_repository";
-import { jwtManager } from "./jwt_manager";
 import { objectStorage } from "../file/object_storage";
-import { ReactRouterCookieStore } from "dn-react-router-toolkit/auth";
+import { ReactRouterCookieManager } from "dn-react-router-toolkit/auth";
 
 export const authService = new AuthService({
   authRepository,
-  jwtManager,
+  accessTokenManager: new JWTManager({
+    secret: process.env.ACCESS_TOKEN_SECRET!,
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN,
+  }),
+  refreshTokenManager: new JWTManager({
+    secret: process.env.REFRESH_TOKEN_SECRET!,
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
+  }),
   objectStorage,
-  accessTokenCookieStore: new ReactRouterCookieStore("paychu_access_token"),
-  refreshTokenCookieStore: new ReactRouterCookieStore("paychu_refresh_token"),
+  accessTokenCookieStore: new ReactRouterCookieManager("paychu_access_token"),
+  refreshTokenCookieStore: new ReactRouterCookieManager("paychu_refresh_token"),
 });

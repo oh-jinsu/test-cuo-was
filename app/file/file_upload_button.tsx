@@ -1,4 +1,4 @@
-import { createFileUploadButton } from "dn-react-router-toolkit/file/client";
+import { createFileUploadButton } from "dn-react-toolkit/file/client";
 import { fileUploader } from "~/file/file_uploader";
 
 export const FileUploadButton = createFileUploadButton({

@@ -18,8 +18,8 @@ export const createAdmin = async () => {
       .onConflictDoUpdate({
         target: userTable.id,
         set: {
+          name: "관리자",
           role: "admin",
-          name: "관리자"
         },
       })
       .returning();

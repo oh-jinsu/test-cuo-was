@@ -1,7 +1,7 @@
 import { withAuthLoader } from "~/auth/with_auth";
 import { createAdmin } from "~/auth/create_admin";
 import { SEO } from "~/seo";
-import { useAuth } from "dn-react-router-toolkit/auth/client";
+import { useAuth } from "dn-react-toolkit/auth/client";
 import { Link, useNavigate } from "react-router";
 
 export const meta = SEO.meta;
