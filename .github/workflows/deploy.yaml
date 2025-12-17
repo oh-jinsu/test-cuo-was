@@ -1,231 +1,317 @@
 name: cicd
 
 on:
-  push:
-    branches: [main]
+    push:
+        branches: [main]
 
-  workflow_dispatch:
+    workflow_dispatch:
 
 env:
-  AWS_REGION: ap-northeast-2
-  ECR_REPOSITORY: ${{ github.event.repository.name }}
-  IMAGE_TAG: ${{ github.sha }}
-  HEALTH_PATH: /
-  BLUE_PORT: 3000
-  GREEN_PORT: 3001
+    AWS_REGION: ap-northeast-2
+    ECR_REPOSITORY: ${{ github.event.repository.name }}
+    IMAGE_TAG: ${{ github.sha }}
+    HEALTH_PATH: /
+    BLUE_PORT: 3000
+    GREEN_PORT: 3001
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    concurrency:
-      group: deploy-${{ github.ref }}
-      cancel-in-progress: true
-    permissions:
-      id-token: write
-      contents: read
+    deploy:
+        runs-on: ubuntu-latest
+        concurrency:
+            group: deploy-${{ github.ref }}
+            cancel-in-progress: true
+        permissions:
+            id-token: write
+            contents: read
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Copy .env
-        run: |
-          echo "${{ secrets.ENV_FILE }}" > .env
+            - name: Copy .env
+              run: |
+                  echo "${{ secrets.ENV_FILE }}" > .env
 
-      - name: Export variables from .env
-        run: |
-          set -o allexport
-          . .env
-          set +o allexport
+            - name: Export variables from .env
+              run: |
+                  set -o allexport
+                  . .env
+                  set +o allexport
 
-          SITE_DOMAIN="$(echo "$SITE_ORIGIN" | sed -E 's#^https?://([^/:]+).*#\1#')"
+                  SITE_DOMAIN="$(echo "$SITE_ORIGIN" | sed -E 's#^https?://([^/:]+).*#\1#')"
 
-          echo "SITE_DOMAIN=$SITE_DOMAIN" >> $GITHUB_ENV
+                  echo "SITE_DOMAIN=$SITE_DOMAIN" >> $GITHUB_ENV
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{ env.AWS_REGION }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+            - name: Set up EC2
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ secrets.EC2_HOST }}
+                  username: ${{ secrets.EC2_USER }}
+                  key: ${{ secrets.EC2_SSH_KEY }}
+                  script: |
+                      set -euo pipefail
 
-      - name: Login to Amazon ECR
-        id: ecr
-        uses: aws-actions/amazon-ecr-login@v2
+                      DB_USER="{{ env.ECR_REPOSITORY }}"
+                      DB_PASSWORD="{{ secrets.DB_PASSWORD }}"
 
-      - name: Ensure ECR repository exists
-        run: |
-          set -euo pipefail
-          REPO="${{ env.ECR_REPOSITORY }}"
-          aws ecr describe-repositories --repository-names "$REPO" --region "${{ env.AWS_REGION }}" >/dev/null 2>&1 || \
-          aws ecr create-repository \
-            --repository-name "$REPO" \
-            --image-scanning-configuration scanOnPush=true \
-            --encryption-configuration encryptionType=AES256 \
-            --region "${{ env.AWS_REGION }}"
+                      sudo apt update
+                      sudo apt upgrade -y
 
-      - name: Build and push image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+                      # Install Nginx if not installed
+                      if ! command -v nginx >/dev/null 2>&1; then
+                        echo "Installing Nginx"
+                        sudo apt install nginx -y
+                        sudo systemctl enable nginx
+                        sudo systemctl start nginx
+                      else
+                        echo "Nginx is already installed"
+                      fi
 
-      - name: Export image URI for deploy
-        run: |
-          echo "ECR_IMAGE_URI=${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}" >> $GITHUB_ENV
+                      # Install AWS CLI if not installed
+                      if ! command -v aws >/dev/null 2>&1; then
+                        echo "Installing AWS CLI"
+                        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+                        unzip awscliv2.zip
+                        sudo ./aws/install
+                        rm -rf awscliv2.zip aws
+                      else
+                        echo "AWS CLI is already installed"
+                      fi
 
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            set -euo pipefail
+                      # Install Docker if not installed
+                      if ! command -v docker >/dev/null 2>&1; then
+                        echo "Installing Docker"
+                        sudo apt install apt-transport-https ca-certificates curl software-properties-common -y
+                        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo g
+                        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+                        sudo apt update
 
-            IMAGE_URI="${{ env.ECR_IMAGE_URI }}"
-            APP_NAME="${{ env.ECR_REPOSITORY }}"
-            BLUE_PORT=${{ env.BLUE_PORT }}
-            GREEN_PORT=${{ env.GREEN_PORT }}
-            HEALTH_PATH="${{ env.HEALTH_PATH }}"
-            TIMEOUT=60
-            AWS_REGION="${{ env.AWS_REGION }}"
-            SITE_DOMAIN="${{ env.SITE_DOMAIN }}"
-            UPSTREAM_NAME="${APP_NAME}_upstream"
-            SITE_CONF="/etc/nginx/sites-enabled/${APP_NAME}.conf"
-            ACTIVE_CONF="/etc/nginx/includes/${UPSTREAM_NAME}.conf"
+                        sudo apt install docker-ce -y
+                        sudo systemctl enable docker
+                        sudo systemctl start docker
+                      else
+                        echo "Docker is already installed"
+                      fi
 
-            if [ -z "$SITE_DOMAIN" ]; then
-              echo "ERROR: SITE_DOMAIN is not set."
-              exit 1
-            fi
+                      # Install Certbot if not installed
+                      if ! command -v certbot >/dev/null 2>&1; then
+                        echo "Installing Certbot"
+                        sudo apt install snapd -y
+                        sudo snap install --classic certbot
+                      else
+                        echo "Certbot is already installed"
+                      fi
 
-            echo "Deploying $IMAGE_URI"
+                      # Install Postgresql if not installed
+                      if ! command -v psql >/dev/null 2>&1; then
+                        echo "Installing Postgresql"
+                        sudo apt install postgresql postgresql-contrib -y
+                        sudo systemctl enable postgresql
+                        sudo systemctl start postgresql
 
-            sudo mkdir -p /etc/nginx/includes
+                        # Set listen_addresses to '*'
+                        sudo sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/"
 
-            cat <<INC | sudo tee /etc/nginx/includes/bluegreen_upstream.${BLUE_PORT}.conf
-            upstream ${UPSTREAM_NAME} { server 127.0.0.1:${BLUE_PORT}; }
-            INC
+                        # Allow remote connections
+                        echo "host    all             all             0.0.0.0/0               md5" | sudo tee -a /etc/postgresql/12/main/pg_hba.conf
+                        
+                        sudo systemctl restart postgresql
+                        
+                        sudo su - postgres
+                        
+                        psql
+                        
+                        CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';
+                        CREATE DATABASE $DB_USER OWNER $DB_USER;
+                        exit
+                        exit
+                      else
+                        echo "Postgresql is already installed"
+                      fi
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
 
-            cat <<INC | sudo tee /etc/nginx/includes/bluegreen_upstream.${GREEN_PORT}.conf
-            upstream ${UPSTREAM_NAME} { server 127.0.0.1:${GREEN_PORT}; }
-            INC
+            - name: Login to Amazon ECR
+              id: ecr
+              uses: aws-actions/amazon-ecr-login@v2
 
-            if [ -L "$ACTIVE_CONF" ] && grep -q "$GREEN_PORT" "$(readlink -f $ACTIVE_CONF)"; then
-              CURRENT_PORT=$GREEN_PORT
-              IDLE_PORT=$BLUE_PORT
-              NEW_INCLUDE="/etc/nginx/includes/bluegreen_upstream.$BLUE_PORT.conf"
-            else
-              CURRENT_PORT=$BLUE_PORT
-              IDLE_PORT=$GREEN_PORT
-              NEW_INCLUDE="/etc/nginx/includes/bluegreen_upstream.$GREEN_PORT.conf"
-            fi
+            - name: Ensure ECR repository exists
+              run: |
+                  set -euo pipefail
+                  REPO="${{ env.ECR_REPOSITORY }}"
+                  aws ecr describe-repositories --repository-names "$REPO" --region "${{ env.AWS_REGION }}" >/dev/null 2>&1 || \
+                  aws ecr create-repository \
+                    --repository-name "$REPO" \
+                    --image-scanning-configuration scanOnPush=true \
+                    --encryption-configuration encryptionType=AES256 \
+                    --region "${{ env.AWS_REGION }}"
 
-            echo "Current port: $CURRENT_PORT, Idle port: $IDLE_PORT"
+            - name: Build and push image
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  push: true
+                  tags: |
+                      ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+                      ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
 
-            cat << INC | sudo tee "$SITE_CONF"
-            include ${ACTIVE_CONF};
+            - name: Export image URI for deploy
+              run: |
+                  echo "ECR_IMAGE_URI=${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}" >> $GITHUB_ENV
 
-            server {
-              server_name ${SITE_DOMAIN};
+            - name: Deploy to EC2
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ secrets.EC2_HOST }}
+                  username: ${{ secrets.EC2_USER }}
+                  key: ${{ secrets.EC2_SSH_KEY }}
+                  script: |
+                      set -euo pipefail
 
-              location / {
-                  proxy_pass http://${UPSTREAM_NAME};
-                  proxy_set_header Host \$host;
-                  proxy_set_header X-Real-IP \$remote_addr;
-                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                  proxy_set_header X-Forwarded-Proto \$scheme;
-              }
+                      IMAGE_URI="${{ env.ECR_IMAGE_URI }}"
+                      APP_NAME="${{ env.ECR_REPOSITORY }}"
+                      BLUE_PORT=${{ env.BLUE_PORT }}
+                      GREEN_PORT=${{ env.GREEN_PORT }}
+                      HEALTH_PATH="${{ env.HEALTH_PATH }}"
+                      TIMEOUT=60
+                      AWS_REGION="${{ env.AWS_REGION }}"
+                      SITE_DOMAIN="${{ env.SITE_DOMAIN }}"
+                      UPSTREAM_NAME="${APP_NAME}_upstream"
+                      SITE_CONF="/etc/nginx/sites-enabled/${APP_NAME}.conf"
+                      ACTIVE_CONF="/etc/nginx/includes/${UPSTREAM_NAME}.conf"
 
-              listen [::]:443 ssl;
-              listen 443 ssl;
-              ssl_certificate /etc/letsencrypt/live/${SITE_DOMAIN}/fullchain.pem;
-              ssl_certificate_key /etc/letsencrypt/live/${SITE_DOMAIN}/privkey.pem;
-              include /etc/letsencrypt/options-ssl-nginx.conf; 
-              ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-            }
+                      if [ -z "$SITE_DOMAIN" ]; then
+                        echo "ERROR: SITE_DOMAIN is not set."
+                        exit 1
+                      fi
 
-            server {
-              if (\$host = ${SITE_DOMAIN}) {
-                return 301 https://\$host\$request_uri;
-              }
+                      echo "Deploying $IMAGE_URI"
 
-              server_name ${SITE_DOMAIN};
-              listen 80;
-              listen [::]:80;
-              return 404;
-            }
-            INC
+                      sudo mkdir -p /etc/nginx/includes
 
-            TEMP_OUTPUT="/tmp/cert_check_output.txt"
+                      cat <<INC | sudo tee /etc/nginx/includes/bluegreen_upstream.${BLUE_PORT}.conf
+                      upstream ${UPSTREAM_NAME} { server 127.0.0.1:${BLUE_PORT}; }
+                      INC
 
-            if ! sudo certbot certificates -d "${SITE_DOMAIN}" > "$TEMP_OUTPUT" 2>&1; then
-              echo "ERROR: Certbot command failed to run."
-              
-              sudo apt install snapd -y
-              sudo snap install --classic certbot || true
-            fi
+                      cat <<INC | sudo tee /etc/nginx/includes/bluegreen_upstream.${GREEN_PORT}.conf
+                      upstream ${UPSTREAM_NAME} { server 127.0.0.1:${GREEN_PORT}; }
+                      INC
 
-            if ! grep -q "${SITE_DOMAIN}" "$TEMP_OUTPUT"; then
-              sudo rm -f "$ACTIVE_CONF"
-              sudo ln -s "$NEW_INCLUDE" "$ACTIVE_CONF"
+                      if [ -L "$ACTIVE_CONF" ] && grep -q "$GREEN_PORT" "$(readlink -f $ACTIVE_CONF)"; then
+                        CURRENT_PORT=$GREEN_PORT
+                        IDLE_PORT=$BLUE_PORT
+                        NEW_INCLUDE="/etc/nginx/includes/bluegreen_upstream.$BLUE_PORT.conf"
+                      else
+                        CURRENT_PORT=$BLUE_PORT
+                        IDLE_PORT=$GREEN_PORT
+                        NEW_INCLUDE="/etc/nginx/includes/bluegreen_upstream.$GREEN_PORT.conf"
+                      fi
 
-              echo "Obtaining SSL certificate for ${SITE_DOMAIN}"
+                      echo "Current port: $CURRENT_PORT, Idle port: $IDLE_PORT"
 
-              sudo certbot --nginx --quiet -d "$SITE_DOMAIN" --non-interactive --agree-tos -m "${CERTBOT_EMAIL:-gabinandobin@gmail.com}" || true
-            else
-              echo "SSL certificate for ${SITE_DOMAIN} already exists"
-            fi
+                      cat << INC | sudo tee "$SITE_CONF"
+                      include ${ACTIVE_CONF};
 
-            rm -f "$TEMP_OUTPUT" || true
+                      server {
+                        server_name ${SITE_DOMAIN};
 
-            aws configure set region "$AWS_REGION"
-            aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
-            aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+                        location / {
+                            proxy_pass http://${UPSTREAM_NAME};
+                            proxy_set_header Host \$host;
+                            proxy_set_header X-Real-IP \$remote_addr;
+                            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                            proxy_set_header X-Forwarded-Proto \$scheme;
+                        }
 
-            aws ecr get-login-password --region "$AWS_REGION" \
-              | sudo docker login --username AWS --password-stdin "$(echo "$IMAGE_URI" | awk -F/ '{print $1}')"
+                        listen [::]:443 ssl;
+                        listen 443 ssl;
+                        ssl_certificate /etc/letsencrypt/live/${SITE_DOMAIN}/fullchain.pem;
+                        ssl_certificate_key /etc/letsencrypt/live/${SITE_DOMAIN}/privkey.pem;
+                        include /etc/letsencrypt/options-ssl-nginx.conf; 
+                        ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+                      }
 
-            sudo docker pull "$IMAGE_URI"
+                      server {
+                        if (\$host = ${SITE_DOMAIN}) {
+                          return 301 https://\$host\$request_uri;
+                        }
 
-            sudo docker rm -f "${APP_NAME}-${IDLE_PORT}" 2>/dev/null || true
+                        server_name ${SITE_DOMAIN};
+                        listen 80;
+                        listen [::]:80;
+                        return 404;
+                      }
+                      INC
 
-            sudo docker run -d --name "${APP_NAME}-${IDLE_PORT}" \
-              -p "${IDLE_PORT}:3000" \
-              --restart=always \
-              "$IMAGE_URI"
+                      TEMP_OUTPUT="/tmp/cert_check_output.txt"
 
-            echo "Health check on http://127.0.0.1:${IDLE_PORT}${HEALTH_PATH}"
+                      if ! sudo certbot certificates -d "${SITE_DOMAIN}" > "$TEMP_OUTPUT" 2>&1; then
+                        echo "ERROR: Certbot command failed to run."
+                        
+                        sudo apt install snapd -y
+                        sudo snap install --classic certbot || true
+                      fi
 
-            for i in $(seq 1 $TIMEOUT); do
-              if curl -fsS "http://127.0.0.1:${IDLE_PORT}${HEALTH_PATH}" >/dev/null 2>&1; then
-                echo "Health check succeeded"
-                break
-              fi
-              if [ $i -eq $TIMEOUT ]; then
-                echo "Health check FAILED"
-                sudo docker logs "${APP_NAME}-${IDLE_PORT}" || true
-                exit 1
-              fi
-              sleep 1
-            done
+                      if ! grep -q "${SITE_DOMAIN}" "$TEMP_OUTPUT"; then
+                        sudo rm -f "$ACTIVE_CONF"
+                        sudo ln -s "$NEW_INCLUDE" "$ACTIVE_CONF"
 
-            sudo rm -f "$ACTIVE_CONF"
-            sudo ln -s "$NEW_INCLUDE" "$ACTIVE_CONF"
-            sudo nginx -t
-            sudo systemctl reload nginx || sudo nginx -s reload
+                        echo "Obtaining SSL certificate for ${SITE_DOMAIN}"
 
-            sudo docker rm -f "${APP_NAME}-${CURRENT_PORT}" 2>/dev/null || true
+                        sudo certbot --nginx --quiet -d "$SITE_DOMAIN" --non-interactive --agree-tos -m "${CERTBOT_EMAIL:-gabinandobin@gmail.com}" || true
+                      else
+                        echo "SSL certificate for ${SITE_DOMAIN} already exists"
+                      fi
 
-            sudo docker image prune -af >/dev/null 2>&1 || true
+                      rm -f "$TEMP_OUTPUT" || true
 
-            echo "Deployment completed successfully. Active port: $IDLE_PORT"
+                      aws configure set region "$AWS_REGION"
+                      aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+                      aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
+                      aws ecr get-login-password --region "$AWS_REGION" \
+                        | sudo docker login --username AWS --password-stdin "$(echo "$IMAGE_URI" | awk -F/ '{print $1}')"
+
+                      sudo docker pull "$IMAGE_URI"
+
+                      sudo docker rm -f "${APP_NAME}-${IDLE_PORT}" 2>/dev/null || true
+
+                      sudo docker run -d --name "${APP_NAME}-${IDLE_PORT}" \
+                        -p "${IDLE_PORT}:3000" \
+                        --restart=always \
+                        "$IMAGE_URI"
+
+                      echo "Health check on http://127.0.0.1:${IDLE_PORT}${HEALTH_PATH}"
+
+                      for i in $(seq 1 $TIMEOUT); do
+                        if curl -fsS "http://127.0.0.1:${IDLE_PORT}${HEALTH_PATH}" >/dev/null 2>&1; then
+                          echo "Health check succeeded"
+                          break
+                        fi
+                        if [ $i -eq $TIMEOUT ]; then
+                          echo "Health check FAILED"
+                          sudo docker logs "${APP_NAME}-${IDLE_PORT}" || true
+                          exit 1
+                        fi
+                        sleep 1
+                      done
+
+                      sudo rm -f "$ACTIVE_CONF"
+                      sudo ln -s "$NEW_INCLUDE" "$ACTIVE_CONF"
+                      sudo nginx -t
+                      sudo systemctl reload nginx || sudo nginx -s reload
+
+                      sudo docker rm -f "${APP_NAME}-${CURRENT_PORT}" 2>/dev/null || true
+
+                      sudo docker image prune -af >/dev/null 2>&1 || true
+
+                      echo "Deployment completed successfully. Active port: $IDLE_PORT"
