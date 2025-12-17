@@ -58,8 +58,8 @@ jobs:
                   script: |
                       set -euo pipefail
 
-                      DB_USER="{{ env.ECR_REPOSITORY }}"
-                      DB_PASSWORD="{{ secrets.DB_PASSWORD }}"
+                      DB_USER="${{ env.ECR_REPOSITORY }}"
+                      DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
 
                       sudo apt update
                       sudo apt upgrade -y
