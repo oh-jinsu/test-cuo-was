@@ -74,6 +74,14 @@ jobs:
                         echo "Nginx is already installed"
                       fi
 
+                      # Install Unzip if not installed
+                      if ! command -v unzip >/dev/null 2>&1; then
+                        echo "Installing Unzip"
+                        sudo apt install unzip -y
+                      else
+                        echo "Unzip is already installed"
+                      fi
+
                       # Install AWS CLI if not installed
                       if ! command -v aws >/dev/null 2>&1; then
                         echo "Installing AWS CLI"
