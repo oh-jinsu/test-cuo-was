@@ -97,10 +97,14 @@ jobs:
                       if ! command -v docker >/dev/null 2>&1; then
                         echo "Installing Docker"
                         sudo apt install apt-transport-https ca-certificates curl software-properties-common -y
-                        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo g
-                        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-                        sudo apt update
+                        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+                        
+                        echo \
+                          "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+                          $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+                          | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
+                        sudo apt update
                         sudo apt install docker-ce -y
                         sudo systemctl enable docker
                         sudo systemctl start docker
@@ -127,8 +131,10 @@ jobs:
                         # Set listen_addresses to '*'
                         sudo sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/"
 
+                        PG_VERSION=$(psql -V | awk '{print $3}' | cut -d'.' -f1,2)
+                        
                         # Allow remote connections
-                        echo "host    all             all             0.0.0.0/0               md5" | sudo tee -a /etc/postgresql/12/main/pg_hba.conf
+                        echo "host    all             all             0.0.0.0/0               md5" | sudo tee -a /etc/postgresql/$PG_VERSION/main/pg_hba.conf
                         
                         sudo systemctl restart postgresql
                         
