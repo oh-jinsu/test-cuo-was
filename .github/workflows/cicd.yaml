@@ -129,13 +129,14 @@ jobs:
                         sudo systemctl start postgresql
 
                         # Set listen_addresses to '*'
-                        sudo sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/"
+                        PG_VERSION=$(ls /etc/postgresql | head -n1)
+                        PG_CONF="/etc/postgresql/${PG_VERSION}/main/postgresql.conf"
+                        PG_HBA="/etc/postgresql/${PG_VERSION}/main/pg_hba.conf"
 
-                        PG_VERSION=$(psql -V | awk '{print $3}' | cut -d'.' -f1,2)
+                        sudo sed -i "s/^#\?listen_addresses\s*=.*/listen_addresses = '*'/" "$PG_CONF"              
                         
-                        # Allow remote connections
-                        echo "host    all             all             0.0.0.0/0               md5" | sudo tee -a /etc/postgresql/$PG_VERSION/main/pg_hba.conf
-                        
+                        echo "host all all 0.0.0.0/0 md5" | sudo tee -a "$PG_HBA"
+
                         sudo systemctl restart postgresql
                         
                         sudo su - postgres
