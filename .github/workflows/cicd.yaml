@@ -138,18 +138,24 @@ jobs:
                         echo "host all all 0.0.0.0/0 md5" | sudo tee -a "$PG_HBA"
 
                         sudo systemctl restart postgresql
-                        
-                        sudo su - postgres
-                        
-                        psql
-                        
-                        CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';
-                        CREATE DATABASE $DB_USER OWNER $DB_USER;
-                        exit
-                        exit
                       else
                         echo "Postgresql is already installed"
                       fi
+
+                      # create Postgresql Table if not exists
+                      sudo -u postgres psql -v ON_ERROR_STOP=1 <<SQL
+                      DO \$\$
+                      BEGIN
+                        IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$DB_USER') THEN
+                          CREATE ROLE "$DB_USER" LOGIN PASSWORD '$DB_PASSWORD';
+                        END IF;
+
+                        IF NOT EXISTS (SELECT FROM pg_database WHERE datname = '$DB_USER') THEN
+                          CREATE DATABASE "$DB_USER" OWNER "$DB_USER";
+                        END IF;
+                      END
+                      \$\$;
+                      SQL
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
 
