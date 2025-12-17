@@ -15,7 +15,7 @@ WORKDIR /app
 RUN npm run build
 
 FROM node:20-alpine
-COPY --from=production-dependencies-env ./package*.json server.js /app/
+COPY --from=production-dependencies-env ./app/package*.json /app/server.js /app/
 COPY --from=production-dependencies-env /app/node_modules /app/node_modules
 COPY --from=build-env /app/build /app/build
 COPY --from=build-env /app/.env /app/.env
